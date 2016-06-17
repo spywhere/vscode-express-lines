@@ -28,14 +28,33 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:expressLines.performEvaluation"
+        "onCommand:expressLines.performDefaultEvaluation",
+        "onCommand:expressLines.performCustomEvaluation"
     ],
     "main": "./out/extension",
     "contributes": {
-        "commands": [{
-            "command": "expressLines.performEvaluation",
-            "title": "Express-Lines: Perform code evaluation on selections"
-        }]
+        "keybindings": [
+            {
+                "command": "expressLines.performDefaultEvaluation",
+                "key": "ctrl+alt+e",
+                "mac": "ctrl+cmd+e",
+                "when": "editorTextFocus"
+            }, {
+                "command": "expressLines.performCustomEvaluation",
+                "key": "ctrl+alt+c",
+                "mac": "ctrl+cmd+c",
+                "when": "editorTextFocus"
+            }
+        ],
+        "commands": [
+            {
+                "command": "expressLines.performDefaultEvaluation",
+                "title": "Express-Lines: Perform code evaluation on selections using default evaluator"
+            }, {
+                "command": "expressLines.performCustomEvaluation",
+                "title": "Express-Lines: Perform code evaluation on selections using custom evaluator"
+            }
+        ]
     },
     "scripts": {
         "vscode:prepublish": "node ./node_modules/vscode/bin/compile",
