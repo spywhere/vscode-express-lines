@@ -1,135 +1,191 @@
 {
-    "name": "express-lines",
-    "displayName": "Express-Lines",
-    "description": "Perform code evaluation on selections",
-    "version": "0.0.1",
-    "publisher": "spywhere",
-    "icon": "images/icon.png",
-    "bugs": {
-        "url": "https://github.com/spywhere/vscode-express-lines/issues"
-    },
-    "homepage": "https://github.com/spywhere/vscode-express-lines/blob/master/README.md",
-    "license": "MIT",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/spywhere/vscode-express-lines.git"
-    },
-
-    "engines": {
-        "vscode": "^1.0.0"
-    },
-    "categories": [
-        "Other"
+  "name": "express-lines",
+  "displayName": "Express-Lines",
+  "description": "Perform code evaluation on selections",
+  "version": "0.1.0",
+  "publisher": "spywhere",
+  "icon": "images/icon.png",
+  "bugs": {
+    "url": "https://github.com/spywhere/vscode-express-lines/issues"
+  },
+  "homepage": "https://github.com/spywhere/vscode-express-lines/blob/master/README.md",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/spywhere/vscode-express-lines.git"
+  },
+  "engines": {
+    "vscode": "^1.0.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:expressLines.performDefaultEvaluation",
+    "onCommand:expressLines.performCustomEvaluation"
+  ],
+  "main": "./out/extension",
+  "contributes": {
+    "keybindings": [
+      {
+        "command": "expressLines.performDefaultEvaluation",
+        "key": "ctrl+alt+e",
+        "mac": "ctrl+cmd+e",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "expressLines.performCustomEvaluation",
+        "key": "ctrl+alt+c",
+        "mac": "ctrl+cmd+c",
+        "when": "editorTextFocus"
+      }
     ],
-    "activationEvents": [
-        "onCommand:expressLines.performDefaultEvaluation",
-        "onCommand:expressLines.performCustomEvaluation"
+    "commands": [
+      {
+        "command": "expressLines.performDefaultEvaluation",
+        "title": "Express-Lines: Perform code evaluation on selections using default evaluator"
+      },
+      {
+        "command": "expressLines.performCustomEvaluation",
+        "title": "Express-Lines: Perform code evaluation on selections using custom evaluator"
+      }
     ],
-    "main": "./out/extension",
-    "contributes": {
-        "keybindings": [
-            {
-                "command": "expressLines.performDefaultEvaluation",
-                "key": "ctrl+alt+e",
-                "mac": "ctrl+cmd+e",
-                "when": "editorTextFocus"
-            }, {
-                "command": "expressLines.performCustomEvaluation",
-                "key": "ctrl+alt+c",
-                "mac": "ctrl+cmd+c",
-                "when": "editorTextFocus"
-            }
-        ],
-        "commands": [
-            {
-                "command": "expressLines.performDefaultEvaluation",
-                "title": "Express-Lines: Perform code evaluation on selections using default evaluator"
-            }, {
-                "command": "expressLines.performCustomEvaluation",
-                "title": "Express-Lines: Perform code evaluation on selections using custom evaluator"
-            }
-        ],
-        "configuration": {
+    "configuration": {
+      "type": "object",
+      "title": "Express-Lines Configurations",
+      "properties": {
+        "expressLines.defaultEvaluator": {
+          "type": "string",
+          "default": "js",
+          "description": "A default evaluator identifier for quick evaluation."
+        },
+        "expressLines.ignoreError": {
+          "type": "boolean",
+          "default": false,
+          "description": "A boolean specify whether continue the evaluation upon error."
+        },
+        "expressLines.escapedCharacters": {
+          "type": "object",
+          "description": "An object contains character and replacement that should be used when evaluator did not provided.",
+          "default": {
+            "\"": "\\\"",
+            "\\": "\\\\",
+            "\r": "\\r",
+            "\n": "\\n",
+            "\t": "\\t"
+          }
+        },
+        "expressLines.evaluatorTimeout": {
+          "type": "number",
+          "default": 100,
+          "description": "An amount of time the evaluator is allowed to run in milliseconds."
+        },
+        "expressLines.evaluatorEncoding": {
+          "type": "string",
+          "default": "utf-8",
+          "description": "The encoding used for the outputs."
+        },
+        "expressLines.evaluators": {
+          "type": "array",
+          "description": "Available evaluators. (\"js\" or \"javascript\" is always available, but can be overrided here)",
+          "items": {
             "type": "object",
-            "title": "Express-Lines Configurations",
+            "required": [
+              "identifier",
+              "description",
+              "command"
+            ],
             "properties": {
-                "expressLines.defaultEvaluator": {
-                    "type": "string",
-                    "default": "js",
-                    "description": "A default evaluator identifier for quick evaluation."
+              "identifier": {
+                "type": "string",
+                "description": "An identifier for the evaluator."
+              },
+              "name": {
+                "type": "string",
+                "description": "A name for the evaluator."
+              },
+              "description": {
+                "type": "string",
+                "description": "A description for the evaluator."
+              },
+              "command": {
+                "type": "array",
+                "items": {
+                  "type": "string"
                 },
-                "expressLines.escapedCharacters": {
-                    "type": "string",
-                    "default": "\"\\\\",
-                    "description": "A string contains character that should be escaped when evaluator did not provided."
-                },
-                "expressLines.evaluators": {
-                    "type": "array",
-                    "description": "Available evaluators. (\"js\" or \"javascript\" is always available, but can be overrided here)",
-                    "items": {
-                        "type": "object",
-                        "required": ["identifier", "description", "command"],
-                        "properties": {
-                            "identifier": {
-                                "type": "string",
-                                "description": "An identifier for the evaluator."
-                            },
-                            "name": {
-                                "type": "string",
-                                "description": "A name for the evaluator."
-                            },
-                            "description": {
-                                "type": "string",
-                                "description": "A description for the evaluator."
-                            },
-                            "command": {
-                                "type": "string",
-                                "description": "A command that use to evaluate the expression. Use \"<expression>\" to replace with user's expression."
-                            },
-                            "escapedCharacters": {
-                                "type": "string",
-                                "description": "A string contains character that should be escaped (override the global settings)."
-                            },
-                            "defaultExpression": {
-                                "type": "string",
-                                "description": "A default expression that is prefilled for user."
-                            }
-                        }
-                    },
-                    "default": [
-                        {
-                            "identifier": "python",
-                            "name": "Python",
-                            "description": "Evaluate Python expression",
-                            "command": "python -c <expression>"
-                        }, {
-                            "identifier": "ruby",
-                            "name": "Ruby",
-                            "description": "Evaluate Ruby expression",
-                            "command": "ruby -e <expression>"
-                        }, {
-                            "identifier": "java",
-                            "name": "Java",
-                            "description": "Evaluate Java expression using \"jrunscript\"",
-                            "command": "jrunscript -e <expression>"
-                        }
-                    ],
-                    "expressLines.sendUsagesAndStats": {
-                        "type": "boolean",
-                        "default": true,
-                        "description": "Send anonymous usage statistics data to the developer."
-                    }
-                }
+                "description": "A command that use to evaluate the expression. Use \"<expression>\" to replace with user's expression."
+              },
+              "escapedCharacters": {
+                "type": "object",
+                "description": "An object contains character and replacement that should be used (override the global settings)."
+              },
+              "defaultExpression": {
+                "type": "string",
+                "description": "A default expression that is prefilled for user."
+              }
             }
+          },
+          "default": [
+            {
+              "identifier": "python",
+              "name": "Python",
+              "description": "Evaluate Python expression using \"python\"",
+              "command": [
+                "python",
+                "-c",
+                "<expression>"
+              ]
+            },
+            {
+              "identifier": "python3",
+              "name": "Python 3",
+              "description": "Evaluate Python 3 expression using \"python3\"",
+              "command": [
+                "python3",
+                "-c",
+                "<expression>"
+              ]
+            },
+            {
+              "identifier": "ruby",
+              "name": "Ruby",
+              "description": "Evaluate Ruby expression",
+              "command": [
+                "ruby",
+                "-e",
+                "<expression>"
+              ]
+            },
+            {
+              "identifier": "java",
+              "name": "Java",
+              "description": "Evaluate Java expression using \"jrunscript\"",
+              "command": [
+                "jrunscript",
+                "-e",
+                "<expression>"
+              ]
+            }
+          ]
+        },
+        "expressLines.sendUsagesAndStats": {
+          "type": "boolean",
+          "default": true,
+          "description": "Send anonymous usage statistics data to the developer."
         }
-    },
-    "scripts": {
-        "vscode:prepublish": "node ./node_modules/vscode/bin/compile",
-        "compile": "node ./node_modules/vscode/bin/compile -watch -p ./",
-        "postinstall": "node ./node_modules/vscode/bin/install"
-    },
-    "devDependencies": {
-        "typescript": "^1.8.5",
-        "vscode": "^0.11.0"
+      }
     }
+  },
+  "scripts": {
+    "vscode:prepublish": "node ./node_modules/vscode/bin/compile",
+    "compile": "node ./node_modules/vscode/bin/compile -watch -p ./",
+    "postinstall": "node ./node_modules/vscode/bin/install"
+  },
+  "devDependencies": {
+    "typescript": "^1.8.5",
+    "vscode": "^0.11.0"
+  },
+  "dependencies": {
+    "request": "^2.72.0"
+  }
 }

@@ -1,13 +1,38 @@
 "use strict";
 import * as vscode from "vscode";
+import {spawnSync} from "child_process";
+var process = require("process");
+var request = require("request");
+var querystring = require("querystring");
 
 interface EvaluatorOption {
     identifier: string;
     name?: string;
     description: string;
-    command: string;
-    escapedCharacters?: string;
+    command: string[];
+    escapedCharacters?: any;
     defaultExpression?: string;
+}
+
+interface EvaluatorOutput {
+    error: boolean;
+    value?: string;
+    selection?: vscode.Selection;
+    errorName?: string;
+    errorMessage?: string;
+}
+
+interface Expression {
+    value: string;
+    selection: vscode.Selection;
+}
+
+interface ExpressionDescriptor {
+    index: number;
+    lineNumber: number;
+    line: string;
+    selection: string;
+    escapedCharacters: any;
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -22,15 +47,21 @@ class ExpressLinesController {
 
         subscriptions.push(vscode.commands.registerTextEditorCommand(
             "expressLines.performDefaultEvaluation", (editor, edit) => {
-                this.selectDefaultEvaluator(editor, edit);
+                this.selectDefaultEvaluator(editor);
             }
         ));
 
         subscriptions.push(vscode.commands.registerTextEditorCommand(
             "expressLines.performCustomEvaluation", (editor, edit) => {
-                this.selectCustomEvaluator(editor, edit);
+                this.selectCustomEvaluator(editor);
             }
         ));
+
+        if(vscode.workspace.getConfiguration(
+            "expressLines"
+        ).get<boolean>("sendUsagesAndStats")){
+            this.sendUsagesAndStats();
+        }
 
         this.disposable = vscode.Disposable.from(...subscriptions);
     }
@@ -39,8 +70,49 @@ class ExpressLinesController {
         this.disposable.dispose();
     }
 
-    selectDefaultEvaluator(editor: vscode.TextEditor,
-                           edit: vscode.TextEditorEdit){
+    sendUsagesAndStats(){
+        // Want to see this data?
+        //   There! http://stats.digitalparticle.com/
+        console.log("[Express-Lines] Sending usage statistics...");
+        var data = querystring.stringify({
+            "name": "express-lines",
+            "schema": "0.1",
+            "version": vscode.extensions.getExtension(
+                "spywhere.express-lines"
+            ).packageJSON["version"],
+            "vscode_version": vscode.version,
+            "platform": process.platform,
+            "architecture": process.arch
+        });
+
+        request(
+            "http://api.digitalparticle.com/1/stats?" + data,
+            (error, response, data) => {
+                if(error){
+                    console.log(
+                        "[Express-Lines] Error while sending usage" +
+                        " statistics: " + error
+                    );
+                }else if(response.statusCode != 200){
+                    console.log(
+                        "[Express-Lines] Error while sending usage" +
+                        " statistics: ErrorCode " + response.statusCode
+                    );
+                }else if(data.toLowerCase() !== "finished"){
+                    console.log(
+                        "[Express-Lines] Error while sending usage" +
+                        " statistics: " + data
+                    );
+                }else{
+                    console.log(
+                        "[Express-Lines] Usage statistics has successfully sent"
+                    );
+                }
+            }
+        );
+    }
+
+    selectDefaultEvaluator(editor: vscode.TextEditor){
         var evaluatorIdentifier = vscode.workspace.getConfiguration(
             "expressLines"
         ).get<string>("defaultEvaluator").toLowerCase();
@@ -58,16 +130,17 @@ class ExpressLinesController {
         }
         if(evaluatorOption === undefined){
             vscode.window.showErrorMessage(
-                `There is no evaluator identified with "${evaluatorIdentifier}"`
+                `[Express-Lines] There is no evaluator identified with "${
+                    evaluatorIdentifier
+                }"`
             );
             return;
         }
 
-        this.inputExpression(editor, edit, evaluatorOption);
+        this.inputExpression(editor, evaluatorOption);
     }
 
-    selectCustomEvaluator(editor: vscode.TextEditor,
-                          edit: vscode.TextEditorEdit){
+    selectCustomEvaluator(editor: vscode.TextEditor){
         var evaluators = [{
             label: "JavaScript",
             description: "Evaluate JavaScript expression with \"eval\" function"
@@ -100,13 +173,14 @@ class ExpressLinesController {
             }
             if(evaluatorOption === undefined){
                 vscode.window.showErrorMessage(
-                    "This shouldn't happen at all. If you see this message," +
-                    " please file the developer an issue on GitHub."
+                    "[Express-Lines] This shouldn't happen at all." +
+                    " If you see this message, please file the developer" +
+                    " an issue on GitHub."
                 );
                 return;
             }
 
-            this.inputExpression(editor, edit, evaluatorOption);
+            this.inputExpression(editor, evaluatorOption);
         });
     }
 
@@ -116,7 +190,7 @@ class ExpressLinesController {
         ).get<EvaluatorOption[]>("evaluators").find(predicate);
     }
 
-    inputExpression(editor: vscode.TextEditor, edit: vscode.TextEditorEdit,
+    inputExpression(editor: vscode.TextEditor,
                     evaluatorOption: EvaluatorOption){
         vscode.window.showInputBox({
             prompt: "Expression for " + ((evaluatorOption) ? (
@@ -131,25 +205,86 @@ class ExpressLinesController {
             if(!value){
                 return;
             }
-            vscode.window.showInformationMessage(
-                ExpressionParser.expandExpression(
-                    editor, evaluatorOption, value
-                ).join(", ")
+            this.evaluateExpression(editor, evaluatorOption, value);
+        });
+    }
+
+    evaluateExpression(editor: vscode.TextEditor,
+                       evaluatorOption: EvaluatorOption, expression: string){
+        var expressions = ExpressionParser.expandExpression(
+            editor, evaluatorOption, expression
+        );
+        if(evaluatorOption){
+            var evaluator = new Evaluator(evaluatorOption);
+            evaluator.evaluate(expressions, outputs => {
+                this.applyExpression(editor, outputs);
+            });
+        }else{
+            var outputs: EvaluatorOutput[] = expressions.map(expression => {
+                try {
+                    return {
+                        error: false,
+                        value: JSON.stringify(eval(expression.value)),
+                        selection: expression.selection
+                    };
+                } catch (error) {
+                    return {
+                        error: true,
+                        errorName: error.name,
+                        errorMessage: error.message
+                    };
+                }
+            });
+            this.applyExpression(editor, outputs);
+        }
+    }
+
+    applyExpression(editor: vscode.TextEditor, outputs: EvaluatorOutput[]){
+        var errorOutputIndex = outputs.findIndex(output => {
+            return output.error;
+        });
+        if(
+            errorOutputIndex >= 0 && !vscode.workspace.getConfiguration(
+                "expressLines"
+            ).get<boolean>("ignoreError")
+        ){
+            var errorOutput = outputs[errorOutputIndex];
+            vscode.window.showErrorMessage(
+                `[Express-Lines] ${
+                    errorOutput.errorName
+                } on selection#${
+                    errorOutputIndex
+                }: ${
+                    errorOutput.errorMessage
+                }`
             );
+            return;
+        }else if(editor.selections.length !== outputs.length){
+            vscode.window.showErrorMessage(
+                "[Express-Lines] You have changed the selections," +
+                " expressions cannot be evaluated in time."
+            );
+            return;
+        }
+
+        editor.edit(edit => {
+            outputs.forEach(output => {
+                if(output.value === null || output.error){
+                    return;
+                }
+                if(output.selection.isEmpty){
+                    edit.insert(output.selection.active, output.value);
+                }else{
+                    edit.replace(output.selection, output.value);
+                }
+            });
         });
     }
 }
 
-interface ExpressionDescriptor {
-    lineNumber: number;
-    line: string;
-    selection: string;
-    escapedCharacters: string;
-}
-
 class ExpressionParser {
     private static expandDescriptor(descriptor: ExpressionDescriptor,
-                                    expression: string) : string{
+                                    expression: string) : string {
         var pattern = new RegExp(
             "\\\\([<])|<(\\w+)(:([^:<>]*))?(:(.+))?>", "g"
         );
@@ -158,12 +293,14 @@ class ExpressionParser {
         ) => {
             if(esc){
                 return esc;
+            }else if(key === "index"){
+                return descriptor.index.toString();
             }else if(key === "lineno"){
                 return descriptor.lineNumber.toString();
             }else if(key === "line"){
                 return descriptor.line;
             }else if(key === "sel" || key === "selection"){
-                return descriptor.selection;
+                return descriptor.selection.replace(/\\r\\n/g, "\n");
             }else if(key === "len" || key === "length"){
                 return this.expandDescriptor(
                     descriptor, subexpr || value
@@ -191,11 +328,16 @@ class ExpressionParser {
                     descriptor, subexpr
                 ).split("\n").join(value);
             }else if(key === "escaped"){
-                return this.expandDescriptor(
+                var output = this.expandDescriptor(
                     descriptor, subexpr || value
-                ).replace(new RegExp(
-                    "([" + descriptor.escapedCharacters + "])", "g"
-                ), "\\$1");
+                )
+                for (var char in descriptor.escapedCharacters) {
+                    if (descriptor.escapedCharacters.hasOwnProperty(char)) {
+                        var replacement = descriptor.escapedCharacters[char];
+                        output = output.split(char).join(replacement);
+                    }
+                }
+                return output;
             }else{
                 return expr;
             }
@@ -204,32 +346,74 @@ class ExpressionParser {
 
     static expandExpression(editor: vscode.TextEditor,
                             evaluatorOption: EvaluatorOption,
-                            expression: string){
+                            expression: string): Expression[] {
         var escapedCharacters = vscode.workspace.getConfiguration(
             "expressLines"
-        ).get<string>("escapedCharacters");
+        ).get<any>("escapedCharacters");
         if(evaluatorOption && evaluatorOption.escapedCharacters){
             escapedCharacters = evaluatorOption.escapedCharacters;
         }
 
-        return editor.selections.map(selection => {
-            var descriptor = {
+        return editor.selections.map((selection, index) => {
+            var descriptor: ExpressionDescriptor = {
+                index: index,
                 lineNumber: selection.active.line,
                 line: editor.document.lineAt(selection.active.line).text,
                 selection: editor.document.getText(selection),
                 escapedCharacters: escapedCharacters
             };
-            return this.expandDescriptor(descriptor, expression);
+            return {
+                value: this.expandDescriptor(descriptor, expression),
+                selection: selection
+            };
         });
     }
 }
 
 class Evaluator {
-    constructor(evaluatorOption: EvaluatorOption){
+    private evaluatorOption: EvaluatorOption;
 
+    constructor(evaluatorOption: EvaluatorOption){
+        this.evaluatorOption = evaluatorOption;
     }
 
-    evaluate(content: string){
-
+    evaluate(expressions: Expression[],
+             callback: (outputs: EvaluatorOutput[]) => void){
+        var outputs: EvaluatorOutput[] = expressions.map(expression => {
+            var commands = this.evaluatorOption.command.slice();
+            var command = commands.shift();
+            var processOutput = spawnSync(
+                command, commands.map(arg => {
+                    return arg === "<expression>" ? expression.value : arg;
+                }), {
+                    timeout: vscode.workspace.getConfiguration(
+                        "expressLines"
+                    ).get<number>("evaluatorTimeout"),
+                    encoding: vscode.workspace.getConfiguration(
+                        "expressLines"
+                    ).get<string>("evaluatorEncoding")
+                }
+            );
+            return {
+                error: !!processOutput.stderr || !!processOutput.error,
+                value: (
+                    processOutput.stdout
+                ) ? processOutput.stdout.toString() : null,
+                selection: expression.selection,
+                errorName: (
+                    processOutput.error ? processOutput.error.name : (
+                        processOutput.stderr ? "Error" : ""
+                    )
+                ),
+                errorMessage: (
+                    processOutput.error ? processOutput.error.message : (
+                        processOutput.stderr ?
+                        processOutput.stderr.toString().split("\n").join(" ") :
+                        ""
+                    )
+                )
+            };
+        });
+        callback(outputs);
     }
 }
