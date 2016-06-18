@@ -1,65 +1,116 @@
-# express-lines README
+## Express-Lines
+[![Version](http://vsmarketplacebadge.apphb.com/version/spywhere.guides.svg)](https://marketplace.visualstudio.com/items?itemName=spywhere.guides)
+[![Installs](http://vsmarketplacebadge.apphb.com/installs/spywhere.guides.svg)](https://marketplace.visualstudio.com/items?itemName=spywhere.guides)
 
-This is the README for your extension "express-lines". After writing up a brief description, we recommend including the following sections.
+Perform code evaluation on selections
 
-## Features
+*Screenshot goes here*
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+### What is Express-Lines?
+Express-Lines is a utility that will run expression (in various languages) from your selections and replace the output from the evaluated expression.
 
-For example if there is an image subfolder under your extension project workspace:
+### What can be use with Express-Lines?
+- Run a number sequence
+- Align text
+- Multi-line regex replace
+- and more... (examples below)
 
-\!\[feature X\]\(images/feature-x.png\)
+### How it works?
+Simply install the extension, restart and you are good to go!
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+Select some selections,
 
-## Requirements
+- For default evaluation (in JavaScript), press `Ctrl+Alt+E` (Windows/Linux) or `Ctrl+Cmd+E` (macOS)
+- For custom evaluation (using custom evaluator), press `Ctrl+Alt+C` (Windows/Linux) or `Ctrl+Cmd+C` (macOS)
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+then enter some expression or just press `Enter/Return`, your selections should be evaluated and replaced right away!
 
-## Extension Settings
+### Expression Syntax
+An expression is simply a text that will pass to the `eval` function (in JavaScript) or as a one-liner code (for custom evaluator).
+This expression system is really powerful as it can manipulate the text before passing on to the evaluator.
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+Each expression will be run for each selection and will be evaluated separately.
 
-For example:
+These are the macros that will provide the information about the selections and also for the manipulation...
 
-This extension contributes the following settings:
+- `\<`  
+Returns a `<` character (aka. to escaped a `<` character)
+- `<lineno>`  
+Returns an active line number (a line that cursor is on)
+- `<line>`  
+Returns a whole text on an active line
+- `<sel>` or `<selection>`  
+Returns a selection text (can be multi-line)
+- `<len:<sub-expression>>` or `<length:<sub-expression>>`  
+Returns a length of a sub-expression output
+- `<lower:<sub-expression>>`  
+Returns a lower-cased output from a sub-expression
+- `<upper:<sub-expression>>`  
+Returns an upper-cased output from a sub-expression
+- `<trim:<sub-expression>>`  
+Returns a whitespace-trimmed output from a sub-expression
+- `<trims:<sub-expression>>`  
+Returns a joined, whitespace-trimmed output from each line of a sub-expression
+- `<join:<value>:<sub-expression>>`  
+Returns a joined output from each line of a sub-expression using `value` as a separator
+- `<escaped:<sub-expression>>`  
+Returns an escaped output from a sub-expression using `escapeCharacters` on the evaluator
 
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
+#### Examples
 
-## Known Issues
+Text:
+```
+    Alex is riding a bear to the village
+while Bob is playing a kite. Meanwhile,
+Carl is preparing a food for them.
+```
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+Selections:
+- `Alex` on line 1
+- `Bob` on line 2
+- `Carl` on line 3
 
-## Release Notes
+Expression: `<sel>`  
+Output:
+- `Alex` from 1st selection
+- `Bob` from 2nd selection
+- `Carl` from 3rd selection
 
-Users appreciate release notes as you update your extension.
+Expression: `<line>`  
+Output:
+- `    Alex is riding a bear to the village` from 1st selection
+- `while Bob is playing a kite. Meanwhile,` from 2nd selection
+- `Carl is preparing a food for them.` from 3rd selection
 
-### 1.0.0
+Expression: `<upper:<sel>>[<lineno>]`  
+Output:
+- `ALEX[1]` from 1st selection
+- `BOB[2]` from 2nd selection
+- `CARL[3]` from 3rd selection
 
-Initial release of ...
+Expression: `<escaped:"<len:<sel>>">`  
+Output:
+- `\"4\"` from 1st selection
+- `\"3\"` from 2nd selection
+- `\"4\"` from 3rd selection
 
-### 1.0.1
+Expression: `Line <lineno> contains <length:<trim:<line>>> characters`  
+Output:
+- `Line 1 contains 36 characters` from 1st selection
+- `Line 2 contains 39 characters` from 2nd selection
+- `Line 3 contains 34 characters` from 3rd selection
 
-Fixed issue #.
+### Custom Evaluator
 
-### 1.1.0
+### Example Usages
 
-Added features X, Y, and Z.
+#### Run a number sequence
 
------------------------------------------------------------------------------------------------------------
+#### Align text
 
-## Working with Markdown
+#### Multi-line regex replace
 
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
+### FAQs
 
-* Split the editor (`Cmd+\` on OSX or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on OSX or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (OSX) to see a list of Markdown snippets
-
-### For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+**Q:** License?  
+**A:** MIT
