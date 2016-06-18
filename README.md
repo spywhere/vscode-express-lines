@@ -11,8 +11,8 @@ Express-Lines is a utility that will run expression (in various languages) from 
 
 ### What can be use with Express-Lines?
 - Run a number sequence
-- Align text
-- Multi-line regex replace
+- Text alignment
+- Multi-line regular expression replacement
 - and more... (examples below)
 
 ### How it works?
@@ -62,7 +62,7 @@ Text:
 ```
     Alex is riding a bear to the village
 while Bob is playing a kite. Meanwhile,
-Carl is preparing a food for them.
+Carl is preparing food for them.
 ```
 
 Selections:
@@ -80,7 +80,7 @@ Expression: `<line>`
 Output:
 - `    Alex is riding a bear to the village` from 1st selection
 - `while Bob is playing a kite. Meanwhile,` from 2nd selection
-- `Carl is preparing a food for them.` from 3rd selection
+- `Carl is preparing food for them.` from 3rd selection
 
 Expression: `<upper:<sel>>[<lineno>]`  
 Output:
@@ -98,7 +98,7 @@ Expression: `Line <lineno> contains <length:<trim:<line>>> characters`
 Output:
 - `Line 1 contains 36 characters` from 1st selection
 - `Line 2 contains 39 characters` from 2nd selection
-- `Line 3 contains 34 characters` from 3rd selection
+- `Line 3 contains 32 characters` from 3rd selection
 
 ### Custom Evaluator
 
@@ -106,9 +106,9 @@ Output:
 
 #### Run a number sequence
 
-#### Align text
+#### Text alignment
 
-#### Multi-line regex replace
+#### Multi-line regular expression replacement
 
 ### FAQs
 
