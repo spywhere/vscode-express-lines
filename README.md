@@ -1,6 +1,6 @@
 ## Express-Lines
-[![Version](http://vsmarketplacebadge.apphb.com/version/spywhere.express-lines.svg)](https://marketplace.visualstudio.com/items?itemName=spywhere.express-lines)
-[![Installs](http://vsmarketplacebadge.apphb.com/installs/spywhere.express-lines.svg)](https://marketplace.visualstudio.com/items?itemName=spywhere.express-lines)
+[![Version](https://vsmarketplacebadge.apphb.com/version/spywhere.express-lines.svg)](https://marketplace.visualstudio.com/items?itemName=spywhere.express-lines)
+[![Installs](https://vsmarketplacebadge.apphb.com/installs/spywhere.express-lines.svg)](https://marketplace.visualstudio.com/items?itemName=spywhere.express-lines)
 
 Perform code evaluation on selections
 

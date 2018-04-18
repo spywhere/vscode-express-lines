@@ -2,7 +2,7 @@
   "name": "express-lines",
   "displayName": "Express-Lines",
   "description": "Perform code evaluation on selections",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "spywhere",
   "icon": "images/icon.png",
   "bugs": {
@@ -127,9 +127,21 @@
           },
           "default": [
             {
+              "identifier": "node",
+              "name": "JavaScript (Node)",
+              "description": "Evaluate JavaScript expression using \"node\"",
+              "defaultExpression": "console.log(\"<sel>\")",
+              "command": [
+                "node",
+                "-e",
+                "<expression>"
+              ]
+            },
+            {
               "identifier": "python",
               "name": "Python",
               "description": "Evaluate Python expression using \"python\"",
+              "defaultExpression": "print(\"<sel>\")",
               "command": [
                 "python",
                 "-c",
@@ -138,8 +150,9 @@
             },
             {
               "identifier": "python3",
-              "name": "Python 3",
-              "description": "Evaluate Python 3 expression using \"python3\"",
+              "name": "Python (python3)",
+              "description": "Evaluate Python expression using \"python3\"",
+              "defaultExpression": "print(\"<sel>\")",
               "command": [
                 "python3",
                 "-c",
